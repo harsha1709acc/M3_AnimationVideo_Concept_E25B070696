@@ -1,0 +1,5 @@
+# Manim intermediate render cache & Python bytecode
+E25B070696_Code/media/
+__pycache__/
+*.pyc
+.DS_Store
