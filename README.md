@@ -30,7 +30,7 @@ x + 2y +  z =  8
 ```
 M3_AnimationVideo_GaussianElimination_E25B070696/
 │
-├── E25B070696_Video.mp4           ← Final rendered video (1920×1080, 30fps, synced voiceover)
+├── E25B070696_Video.mp4           ← Final rendered video (1920×1080, 30fps, exactly 5:00, synced voiceover)
 ├── Narration_Script.md            ← Timestamped narration script (~130 wpm) for student voice-over
 ├── Storyboard.pdf                 ← 6-scene storyboard table
 ├── README.md                      ← This file
@@ -98,7 +98,7 @@ chmod +x render_all.sh
 ./render_all.sh --draft
 ```
 
-### Final (1080p, 30fps, silent — for submission)
+### Final (1080p, 30fps, synced voiceover — for submission)
 ```bash
 ./render_all.sh
 ```
@@ -106,9 +106,16 @@ chmod +x render_all.sh
 The script will:
 1. Verify all mathematics with exact fractions & NumPy assertions
 2. Render all 6 Manim scenes at 1080p 30fps
-3. Concatenate scenes into `STUDENTID_Video.mp4` with `-an` (no audio stream)
-4. Generate `Storyboard.pdf`
-5. Verify stream info and total duration with `ffprobe` (target 4:45–5:15)
+3. Concatenate scenes into `silent_concat.mp4`
+4. Mux and sync student voiceover, padding the final frame and audio silence to reach exactly 5:00 (300.0s)
+5. Generate `Storyboard.pdf`
+6. Verify stream info and total duration with `ffprobe` (300.0s / 5:00)
+
+#### End Frame Extension Command:
+To extend the video to exactly 5:00 by holding the closing slide and padding audio silence:
+```bash
+ffmpeg -y -i Video_backup_4m51.mp4   -vf "tpad=stop_mode=clone:stop_duration=10.1"   -af "apad=whole_dur=300.0"   -c:v libx264 -pix_fmt yuv420p -preset fast -crf 18   -c:a aac -b:a 192k   -t 300.0 E25B070696_Video.mp4
+```
 
 ### Render a single scene manually
 ```bash

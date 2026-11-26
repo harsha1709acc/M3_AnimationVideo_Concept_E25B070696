@@ -78,12 +78,29 @@ if [[ -f "$VOICEOVER" ]]; then
   AUD_DUR=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$VOICEOVER")
   ATEMPO=$(python3 -c "print(round(float('$AUD_DUR') / float('$VID_DUR'), 6))")
   echo "  Audio duration: $AUD_DUR s | Video duration: $VID_DUR s | atempo=$ATEMPO"
+  
+  # Step 3a: Mux audio with video
+  MUXED_TMP="$TMP_DIR/muxed_raw.mp4"
   ffmpeg -y -i "$SILENT_VID" -i "$VOICEOVER" \
     -c:v copy \
     -filter:a "atempo=$ATEMPO" \
     -c:a aac -b:a 192k \
     -map 0:v:0 -map 1:a:0 \
     -shortest \
+    "$MUXED_TMP"
+    
+  # Step 3b: Extend end frame and pad silence to exactly 5:00 (300.0s)
+  echo "  Padding end closing frame and silence to reach exactly 5:00 (300.0s)..."
+  CURRENT_DUR=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$MUXED_TMP")
+  STOP_PAD=$(python3 -c "print(max(0.0, round(300.0 - float('$CURRENT_DUR'), 2)))")
+  echo "  Current muxed duration: $CURRENT_DUR s | Padding stop_duration: $STOP_PAD s"
+  
+  ffmpeg -y -i "$MUXED_TMP" \
+    -vf "tpad=stop_mode=clone:stop_duration=$STOP_PAD" \
+    -af "apad=whole_dur=300.0" \
+    -c:v libx264 -pix_fmt yuv420p -preset fast -crf 18 \
+    -c:a aac -b:a 192k \
+    -t 300.0 \
     "$OUT_FILE"
 else
   echo "▶ Step 3: No voiceover.mp3 found — keeping silent video."
